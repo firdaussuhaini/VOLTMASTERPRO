@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VoltMaster PRO</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#020617;
+color:white;
+}
+
+header{
+text-align:center;
+padding:25px;
+background:#0f172a;
+}
+
+h1{
+color:#22c55e;
+margin:0;
+}
+
+.container{
+max-width:650px;
+margin:auto;
+padding:15px;
+}
+
+.card{
+background:#111827;
+padding:18px;
+border-radius:16px;
+margin-top:16px;
+}
+
+h3{
+margin-top:0;
+color:#facc15;
+}
+
+input,select{
+width:100%;
+padding:12px;
+margin:6px 0;
+border:none;
+border-radius:10px;
+background:#0f172a;
+color:white;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:10px;
+background:#22c55e;
+font-weight:bold;
+cursor:pointer;
+margin-top:8px;
+}
+
+.result{
+margin-top:10px;
+color:#22c55e;
+font-weight:bold;
+}
+
+/* MODE BOX */
+#phaseMode{
+margin-top:10px;
+padding:10px;
+border-radius:10px;
+text-align:center;
+font-weight:bold;
+background:#1f2937;
+color:#94a3b8;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h1>⚡ VoltMaster PRO</h1>
+<p>Electrical Calculator for Electricians</p>
+</header>
+
+<div class="container">
+
+<!-- OHM LAW -->
+<div class="card">
+<h3>Ohm’s Law</h3>
+<input id="v" placeholder="Voltage (V)">
+<input id="i" placeholder="Current (A)">
+<button onclick="calcOhm()">Calculate Resistance</button>
+<div class="result" id="r1"></div>
+</div>
+
+<!-- POWER -->
+<div class="card">
+<h3>Power Calculation</h3>
+<input id="pv" placeholder="Voltage (V)">
+<input id="pi" placeholder="Current (A)">
+<button onclick="calcPower()">Calculate Power</button>
+<div class="result" id="r2"></div>
+</div>
+
+<!-- VOLTAGE DROP -->
+<div class="card">
+<h3>Voltage Drop</h3>
+<input id="sv" placeholder="Supply Voltage (V)">
+<input id="ca" placeholder="Current (A)">
+<input id="rm" placeholder="Resistance (Ω/m)">
+<input id="ln" placeholder="Length (m)">
+<button onclick="calcVD()">Calculate Voltage Drop</button>
+<div class="result" id="vdResult"></div>
+</div>
+
+<!-- LOAD ESTIMATION PRO -->
+<div class="card">
+<h3>Load Estimation (PRO)</h3>
+
+<select id="phase" onchange="updatePhaseUI()">
+  <option value="1">Single Phase (240V - House)</option>
+  <option value="3">Three Phase (415V - Industrial)</option>
+</select>
+
+<div id="phaseMode">Mode: Not Selected</div>
+
+<input id="loadW" placeholder="Total Load (W)">
+<input id="loadV" value="240">
+<input id="df" value="1" placeholder="Demand Factor (0.8 - 1)">
+
+<button onclick="calcLoadPro()">Calculate Load</button>
+<div class="result" id="loadResult"></div>
+</div>
+
+<!-- CABLE -->
+<div class="card">
+<h3>Cable Size</h3>
+<input id="amp" placeholder="Current (A)">
+<button onclick="calcCable()">Calculate Cable Size</button>
+<div class="result" id="cbResult"></div>
+</div>
+
+<!-- MCB -->
+<div class="card">
+<h3>MCB Selection</h3>
+<input id="mcbCurrent" placeholder="Load Current (A)">
+<button onclick="calcMCB()">Calculate MCB</button>
+<div class="result" id="mcbResult"></div>
+</div>
+
+</div>
+
+<script>
+
+/* INIT */
+window.onload = function(){
+updatePhaseUI();
+}
+
+/* MODE UI */
+function updatePhaseUI(){
+
+let phase = document.getElementById("phase").value;
+let box = document.getElementById("phaseMode");
+
+if(phase == 1){
+    box.style.background = "#14532d";
+    box.style.color = "#22c55e";
+    box.innerHTML = "🟢 SINGLE PHASE MODE (HOUSE / RESIDENTIAL)";
+}else{
+    box.style.background = "#7c2d12";
+    box.style.color = "#facc15";
+    box.innerHTML = "🟡 THREE PHASE MODE (INDUSTRIAL / FACTORY)";
+}
+
+}
+
+/* OHM */
+function calcOhm(){
+let V=+v.value;
+let I=+i.value;
+if(!V||!I){r1.innerHTML="Invalid input";return;}
+r1.innerHTML="Resistance = "+(V/I).toFixed(2)+" Ω";
+}
+
+/* POWER */
+function calcPower(){
+let V=+pv.value;
+let I=+pi.value;
+if(!V||!I){r2.innerHTML="Invalid input";return;}
+r2.innerHTML="Power = "+(V*I).toFixed(2)+" W";
+}
+
+/* VOLTAGE DROP */
+function calcVD(){
+let V=+sv.value;
+let I=+ca.value;
+let R=+rm.value;
+let L=+ln.value;
+
+if(!V||!I||!R||!L){
+vdResult.innerHTML="Invalid input";
+return;
+}
+
+let drop = 2 * I * R * L;
+let finalV = V - drop;
+
+vdResult.innerHTML =
+"Voltage Drop = "+drop.toFixed(2)+" V<br>"+
+"Final Voltage = "+finalV.toFixed(2)+" V";
+}
+
+/* LOAD PRO */
+function calcLoadPro(){
+
+let P = +loadW.value;
+let V = +loadV.value;
+let DF = +df.value;
+let phase = +document.getElementById("phase").value;
+
+if(!P||!V||!DF){
+loadResult.innerHTML="Invalid input";
+return;
+}
+
+let realLoad = P * DF;
+let I;
+
+if(phase === 1){
+I = realLoad / V;
+}else{
+I = realLoad / (Math.sqrt(3) * V);
+}
+
+let safeI = I * 1.25;
+
+let mcb =
+safeI<=6?"6A":
+safeI<=10?"10A":
+safeI<=16?"16A":
+safeI<=20?"20A":
+safeI<=32?"32A":
+safeI<=40?"40A":
+"63A+";
+
+loadResult.innerHTML =
+"Mode: " + (phase==1?"Single Phase":"Three Phase") + "<br>" +
+"Load: "+realLoad.toFixed(2)+" W<br>"+
+"Current: "+I.toFixed(2)+" A<br>"+
+"Safe: "+safeI.toFixed(2)+" A<br>"+
+"MCB: "+mcb;
+
+}
+
+/* CABLE */
+function calcCable(){
+let A=+amp.value;
+if(!A){cbResult.innerHTML="Invalid input";return;}
+
+let size =
+A<=10?"1.5 mm²":
+A<=16?"2.5 mm²":
+A<=25?"4 mm²":
+A<=32?"6 mm²":
+A<=40?"10 mm²":
+"16 mm²+";
+
+cbResult.innerHTML="Cable Size: "+size;
+}
+
+/* MCB */
+function calcMCB(){
+let I=+mcbCurrent.value;
+if(!I){mcbResult.innerHTML="Invalid input";return;}
+
+let safe=I*1.25;
+
+let mcb =
+safe<=6?"6A":
+safe<=10?"10A":
+safe<=16?"16A":
+safe<=20?"20A":
+safe<=32?"32A":
+safe<=40?"40A":
+"63A+";
+
+mcbResult.innerHTML="MCB: "+mcb;
+}
+
+</script>
+
+</body>
+</html>
